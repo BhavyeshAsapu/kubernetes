@@ -1,0 +1,27 @@
+# ---------- Build stage ----------
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
+WORKDIR /app
+
+# Install git (needed to clone repo)
+RUN apt-get update && apt-get install -y git
+
+# Clone your backend repo
+RUN git clone https://github.com/BhavyeshAsapu/CICD_project_JB.git .
+
+# Build the Spring Boot JAR (cache Maven dependencies for speed)
+RUN --mount=type=cache,target=/root/.m2 mvn clean package -DskipTests
+
+# ---------- Run stage ----------
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+# Copy jar from builder stage
+COPY --from=builder /app/target/*.jar app.jar
+
+# Expose backend port (make sure it matches Spring Boot's `server.port`)
+EXPOSE 8081
+
+# Optional JVM opts
+ENV JAVA_OPTS=""
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
